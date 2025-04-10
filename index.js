@@ -18,32 +18,31 @@ app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
   const apiKey = process.env.GEMINI_API_KEY;
 
-  console.log("📩 Messaggio ricevuto:", userMessage);
-  console.log("🔐 API key presente:", apiKey ? "Sì ✅" : "No ❌");
-
   if (!apiKey) {
-    return res.status(500).json({ error: 'Chiave API Gemini mancante' });
+    console.error("❌ Chiave API mancante");
+    return res.status(500).json({ error: 'Chiave API mancante' });
   }
 
+  console.log("📨 Messaggio ricevuto:", userMessage);
+
   try {
-    const geminiResponse = await axios.post(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey,
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`,
       {
         contents: [
           {
-            role: 'user',
             parts: [{ text: userMessage }]
           }
         ]
       },
       {
         headers: {
-          "Content-Type": "application/json"
+          'Content-Type': 'application/json'
         }
       }
     );
 
-    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ Nessuna risposta da Gemini.';
+    const reply = response.data.candidates?.[0]?.content?.parts?.[0]?.text || "❓ Nessuna risposta da Gemini";
     console.log("🤖 Risposta Gemini:", reply);
     res.json({ reply });
   } catch (error) {
@@ -53,5 +52,5 @@ app.post('/chat', async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Assistente Sandro con Gemini attivo sulla porta ${PORT}`);
+  console.log(`✅ Server attivo su porta ${PORT}`);
 });
