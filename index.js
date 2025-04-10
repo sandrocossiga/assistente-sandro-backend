@@ -11,7 +11,7 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.send('Assistente Sandro con Gemini è attivo ✅');
+  res.send('✅ Assistente Sandro con Gemini è attivo');
 });
 
 app.post('/chat', async (req, res) => {
@@ -19,44 +19,31 @@ app.post('/chat', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
 
   console.log("📩 Messaggio ricevuto:", userMessage);
-  console.log("🔐 Chiave API Gemini presente:", apiKey ? "Sì ✅" : "No ❌");
+  console.log("🔐 API key presente:", apiKey ? "Sì ✅" : "No ❌");
 
   if (!apiKey) {
     return res.status(500).json({ error: 'Chiave API Gemini mancante' });
   }
 
   try {
-  const geminiResponse = await axios.post(
-  'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey,
-  {
-    contents: [
+    const geminiResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey,
       {
-        role: 'user',
-        parts: [{ text: userMessage }]
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: userMessage }]
+          }
+        ]
+      },
+      {
+        headers: {
+          "Content-Type": "application/json"
+        }
       }
-    ]
-  },
-  {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }
-);
+    );
 
-  {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }
-);
-  {
-    headers: {
-      'Content-Type': 'application/json'
-    }
-  }
-);
-
-    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta da Gemini.';
+    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '⚠️ Nessuna risposta da Gemini.';
     console.log("🤖 Risposta Gemini:", reply);
     res.json({ reply });
   } catch (error) {
