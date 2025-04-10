@@ -26,8 +26,8 @@ app.post('/chat', async (req, res) => {
   }
 
   try {
-    const geminiResponse = await axios.post(
-  'https://generativelanguage.googleapis.com/v1/models/gemini-pro-1.5:generateContent?key=' + apiKey,
+   const geminiResponse = await axios.post(
+  'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey,
   {
     contents: [
       {
@@ -36,6 +36,12 @@ app.post('/chat', async (req, res) => {
       }
     ]
   },
+  {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+);
   {
     headers: {
       'Content-Type': 'application/json'
