@@ -11,49 +11,47 @@ app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(bodyParser.json());
 
 app.get('/', (req, res) => {
-  res.send('Assistente Sandro backend attivo ✅');
+  res.send('Assistente Sandro con Gemini è attivo ✅');
 });
 
 app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
-  const systemMessage = process.env.SYSTEM_MESSAGE || "Sei un assistente personale professionale.";
-  const apiKey = process.env.OPENAI_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
 
-  console.log("📩 Messaggio ricevuto dal frontend:", userMessage);
-  console.log("🔑 API key presente:", apiKey ? "Sì ✅" : "No ❌");
+  console.log("📩 Messaggio ricevuto:", userMessage);
+  console.log("🔐 Chiave API Gemini presente:", apiKey ? "Sì ✅" : "No ❌");
 
   if (!apiKey) {
-    console.error("❌ Errore: OPENAI_KEY mancante");
-    return res.status(500).json({ error: 'Chiave OpenAI mancante nel backend.' });
+    return res.status(500).json({ error: 'Chiave API Gemini mancante' });
   }
 
   try {
-    const response = await axios.post(
-      'https://api.openai.com/v1/chat/completions',
+    const geminiResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=' + apiKey,
       {
-        model: 'gpt-3.5-turbo',
-        messages: [
-          { role: 'system', content: systemMessage },
-          { role: 'user', content: userMessage }
+        contents: [
+          {
+            role: 'user',
+            parts: [{ text: userMessage }]
+          }
         ]
       },
       {
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         }
       }
     );
 
-    const reply = response.data.choices[0].message.content;
-    console.log("🤖 Risposta GPT:", reply);
+    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta da Gemini.';
+    console.log("🤖 Risposta Gemini:", reply);
     res.json({ reply });
   } catch (error) {
-    console.error("❌ Errore nella chiamata a GPT:", error.response?.data || error.message);
-    res.status(500).json({ error: 'Errore nella chiamata a GPT.' });
+    console.error("❌ Errore Gemini:", error.response?.data || error.message);
+    res.status(500).json({ error: 'Errore nella risposta di Gemini' });
   }
 });
 
 app.listen(PORT, () => {
-  console.log(`✅ Assistente Sandro backend attivo su porta ${PORT}`);
+  console.log(`✅ Assistente Sandro con Gemini attivo sulla porta ${PORT}`);
 });
