@@ -27,21 +27,21 @@ app.post('/chat', async (req, res) => {
 
   try {
     const geminiResponse = await axios.post(
-      'https://generativelanguage.googleapis.com/v1/models/gemini-pro-1.5:generateContent?key=' + apiKey
+  'https://generativelanguage.googleapis.com/v1/models/gemini-pro-1.5:generateContent?key=' + apiKey,
+  {
+    contents: [
       {
-        contents: [
-          {
-            role: 'user',
-            parts: [{ text: userMessage }]
-          }
-        ]
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json'
-        }
+        role: 'user',
+        parts: [{ text: userMessage }]
       }
-    );
+    ]
+  },
+  {
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  }
+);
 
     const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || 'Nessuna risposta da Gemini.';
     console.log("🤖 Risposta Gemini:", reply);
