@@ -16,7 +16,16 @@ app.get('/', (req, res) => {
 
 app.post('/chat', async (req, res) => {
   const userMessage = req.body.message;
-  const systemMessage = process.env.SYSTEM_MESSAGE || "Sei un assistente professionale.";
+  const systemMessage = process.env.SYSTEM_MESSAGE || "Sei un assistente personale professionale.";
+  const apiKey = process.env.OPENAI_KEY;
+
+  console.log("📩 Messaggio ricevuto dal frontend:", userMessage);
+  console.log("🔑 API key presente:", apiKey ? "Sì ✅" : "No ❌");
+
+  if (!apiKey) {
+    console.error("❌ Errore: OPENAI_KEY mancante");
+    return res.status(500).json({ error: 'Chiave OpenAI mancante nel backend.' });
+  }
 
   try {
     const response = await axios.post(
@@ -30,17 +39,18 @@ app.post('/chat', async (req, res) => {
       },
       {
         headers: {
-          'Authorization': `Bearer ${process.env.OPENAI_KEY}`,
+          'Authorization': `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         }
       }
     );
 
     const reply = response.data.choices[0].message.content;
+    console.log("🤖 Risposta GPT:", reply);
     res.json({ reply });
   } catch (error) {
-    console.error('Errore durante la chiamata a OpenAI:', error.message);
-    res.status(500).json({ error: 'Errore durante la risposta GPT.' });
+    console.error("❌ Errore nella chiamata a GPT:", error.response?.data || error.message);
+    res.status(500).json({ error: 'Errore nella chiamata a GPT.' });
   }
 });
 
