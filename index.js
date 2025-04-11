@@ -166,7 +166,8 @@ if (message.text) {
   const testo = message.text.toLowerCase();
 
   if (testo.includes("crea documento google chiamato")) {
-    const titoloDocumento = message.text.split("crea documento google chiamato")[1]?.trim() || "Documento senza nome";
+    const match = message.text.match(/crea documento google chiamato (.+)/i);
+const titoloDocumento = match ? match[1].trim() : "Documento senza nome";
 
     const fileMetadata = {
       name: titoloDocumento,
