@@ -154,6 +154,16 @@ const titoloDocumento = match ? match[1].trim() : "Documento senza nome";
         fields: 'id'
       });
 
+      // Condividi il file con te stesso
+await driveService.permissions.create({
+  fileId: file.data.id,
+  requestBody: {
+    role: 'writer',
+    type: 'user',
+    emailAddress: 'sandrocossiga@gmail.com'
+  }
+});
+
       await sendMessage(chatId, `✅ Documento Google creato con successo: "${titoloDocumento}"\n📎 [Aprilo qui](https://docs.google.com/document/d/${file.data.id}/edit)`);
     } catch (error) {
       console.error("❌ Errore Google Drive:", error.message);
