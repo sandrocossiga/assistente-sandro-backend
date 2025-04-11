@@ -23,6 +23,77 @@ app.post('/webhook', async (req, res) => {
 
   if (!message) return res.sendStatus(200);
 
+if (message.voice) {
+  const fileId = message.voice.file_id;
+  const chatId = message.chat.id;
+
+  try {
+    // 🔁 Recupera info sul file audio
+    const fileInfo = await axios.get(`${TELEGRAM_API}/getFile?file_id=${fileId}`);
+    const filePath = fileInfo.data.result.file_path;
+    const fileUrl = `${TELEGRAM_FILE_API}/${filePath}`;
+
+    const oggPath = `audio_${Date.now()}.ogg`;
+    const wavPath = oggPath.replace('.ogg', '.wav');
+
+    // 🔽 Scarica il file ogg
+    const oggFile = fs.createWriteStream(oggPath);
+    https.get(fileUrl, (response) => {
+      response.pipe(oggFile);
+      oggFile.on('finish', async () => {
+        oggFile.close();
+
+        // 🔄 Converte in wav
+        ffmpeg(oggPath)
+          .toFormat('wav')
+          .on('error', (err) => {
+            console.error('Errore conversione ffmpeg:', err.message);
+            sendMessage(chatId, '❌ Errore nella conversione audio.');
+          })
+          .on('end', async () => {
+            console.log(`🎧 Conversione completata: ${wavPath}`);
+
+            // 🔁 Invia a Google STT
+            const speech = require('@google-cloud/speech').v1;
+            const client = new speech.SpeechClient();
+
+            const audioBytes = fs.readFileSync(wavPath).toString('base64');
+            const audio = { content: audioBytes };
+            const config = {
+              encoding: 'LINEAR16',
+              sampleRateHertz: 48000,
+              languageCode: 'it-IT',
+            };
+
+            const request = { audio, config };
+
+            try {
+              const [response] = await client.recognize(request);
+              const transcription = response.results
+                .map(result => result.alternatives[0].transcript)
+                .join('\n');
+
+              await sendMessage(chatId, `📝 Hai detto:\n${transcription || 'Nessuna trascrizione trovata.'}`);
+            } catch (sttError) {
+              console.error('❌ Errore Google STT:', sttError.message);
+              await sendMessage(chatId, '⚠️ Errore nella trascrizione vocale.');
+            }
+
+            // 🧹 Pulisce file
+            fs.unlinkSync(oggPath);
+            fs.unlinkSync(wavPath);
+          })
+          .save(wavPath);
+      });
+    });
+  } catch (err) {
+    console.error('Errore nel download audio:', err.message);
+    await sendMessage(message.chat.id, '⚠️ Errore nel download dell’audio.');
+  }
+}
+
+
+  
   const chatId = message.chat.id;
 
   // Caso: messaggio vocale
