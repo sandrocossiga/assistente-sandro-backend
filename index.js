@@ -133,33 +133,7 @@ if (message.voice) {
   const chatId = message.chat.id;
 
   // Caso: messaggio vocale
-  if (message.voice) {
-    const fileId = message.voice.file_id;
 
-    try {
-      // Recupera info sul file
-      const fileInfo = await axios.get(`${TELEGRAM_API}/getFile?file_id=${fileId}`);
-      const filePath = fileInfo.data.result.file_path;
-
-      // Scarica il file
-      const fileUrl = `${TELEGRAM_FILE_API}/${filePath}`;
-      const fileName = `audio_${Date.now()}.ogg`;
-
-      const file = fs.createWriteStream(fileName);
-      https.get(fileUrl, (response) => {
-        response.pipe(file);
-        file.on('finish', async () => {
-          file.close();
-          console.log(`🎙️ Audio scaricato: ${fileName}`);
-          // 🔁 Prossimo step: convertire in testo
-          await sendMessage(chatId, `Audio ricevuto! Ora lo trascrivo...`);
-        });
-      });
-    } catch (err) {
-      console.error('Errore nel download:', err);
-      await sendMessage(chatId, '⚠️ Errore nel download dell’audio.');
-    }
-  }
 
   // Caso: messaggio testuale
 if (message.text) {
