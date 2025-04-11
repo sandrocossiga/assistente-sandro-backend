@@ -9,6 +9,14 @@ const ffmpegPath = require('ffmpeg-static');        // Trova il percorso del bin
 const ffmpeg = require('fluent-ffmpeg');            // Libreria wrapper per ffmpeg
 ffmpeg.setFfmpegPath(ffmpegPath);                   // Collega il binario statico a fluent-ffmpeg
 
+const { google } = require('googleapis');
+
+const auth = new google.auth.GoogleAuth({
+  keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
+  scopes: ['https://www.googleapis.com/auth/drive']
+});
+
+const driveService = google.drive({ version: 'v3', auth });
 
 
 const app = express();
