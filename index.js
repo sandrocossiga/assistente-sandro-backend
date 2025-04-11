@@ -139,6 +139,43 @@ if (message.voice) {
 if (message.text) {
   const testo = message.text.toLowerCase();
 
+if (testo.startsWith("invia email a")) {
+  const emailRegex = /invia email a (.+?) con oggetto (.+?) e testo (.+)/i;
+  const match = testo.match(emailRegex);
+
+  if (match) {
+    const destinatario = match[1].trim();
+    const oggetto = match[2].trim();
+    const corpo = match[3].trim();
+
+    try {
+      const gmail = google.gmail({ version: 'v1', auth });
+
+      const encodedMessage = Buffer.from(
+        `To: ${destinatario}\r\n` +
+        `Subject: ${oggetto}\r\n\r\n` +
+        `${corpo}`
+      ).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
+
+      await gmail.users.messages.send({
+        userId: 'me',
+        requestBody: {
+          raw: encodedMessage
+        }
+      });
+
+      await sendMessage(chatId, `✅ Email inviata con successo a ${destinatario}`);
+    } catch (err) {
+      console.error("❌ Errore invio email:", err.message);
+      await sendMessage(chatId, "⚠️ Errore durante l'invio dell'email.");
+    }
+  } else {
+    await sendMessage(chatId, "⚠️ Formato email non valido. Usa:\ninvia email a [destinatario] con oggetto [oggetto] e testo [testo]");
+  }
+
+  return res.sendStatus(200); // Ferma qui per evitare doppia risposta
+}
+  
   if (testo.includes("crea documento google chiamato")) {
     const match = message.text.match(/crea documento google chiamato (.+)/i);
 const titoloDocumento = match ? match[1].trim() : "Documento senza nome";
