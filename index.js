@@ -153,10 +153,42 @@ if (message.voice) {
     }
   }
 
-  // Caso: messaggio testuale
-  if (message.text) {
-    await sendMessage(chatId, `Hai scritto: ${message.text}`);
+  // Caso: messaggio testuale con risposta da Gemini
+if (message.text) {
+  const userMessage = message.text;
+  const now = new Date().toLocaleString('it-IT', {
+    timeZone: 'Europe/Rome',
+    dateStyle: 'full',
+    timeStyle: 'short'
+  });
+
+  try {
+    const geminiResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent',
+      {
+        contents: [{
+          parts: [
+            { text: `Oggi è ${now}. Rispondi in modo aggiornato e preciso.` },
+            { text: userMessage }
+          ]
+        }]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        }
+      }
+    );
+
+    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Nessuna risposta ricevuta da Gemini.';
+    await sendMessage(chatId, reply);
+  } catch (geminiErr) {
+    console.error('❌ Errore Gemini (testo):', geminiErr.response?.data || geminiErr.message);
+    await sendMessage(chatId, '⚠️ Errore durante la risposta dell’assistente AI.');
   }
+}
+
 
   res.sendStatus(200);
 });
