@@ -5,6 +5,12 @@ const fs = require('fs');
 const https = require('https');
 require('dotenv').config();
 
+const ffmpegPath = require('ffmpeg-static');        // Trova il percorso del binario ffmpeg statico
+const ffmpeg = require('fluent-ffmpeg');            // Libreria wrapper per ffmpeg
+ffmpeg.setFfmpegPath(ffmpegPath);                   // Collega il binario statico a fluent-ffmpeg
+
+
+
 const app = express();
 app.use(bodyParser.json());
 
