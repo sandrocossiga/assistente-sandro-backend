@@ -161,42 +161,66 @@ if (message.voice) {
     }
   }
 
-  // Caso: messaggio testuale con risposta da Gemini
+  // Caso: messaggio testuale
 if (message.text) {
-  const userMessage = message.text;
-  const now = new Date().toLocaleString('it-IT', {
-    timeZone: 'Europe/Rome',
-    dateStyle: 'full',
-    timeStyle: 'short'
-  });
+  const testo = message.text.toLowerCase();
 
-  try {
-    const geminiResponse = await axios.post(
-      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent',
-      {
-        contents: [{
-          parts: [
-            { text: `Oggi è ${now}. Rispondi in modo aggiornato e preciso.` },
-            { text: userMessage }
-          ]
-        }]
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'x-goog-api-key': process.env.GEMINI_API_KEY
+  if (testo.includes("crea documento google chiamato")) {
+    const titoloDocumento = message.text.split("crea documento google chiamato")[1]?.trim() || "Documento senza nome";
+
+    const fileMetadata = {
+      name: titoloDocumento,
+      mimeType: 'application/vnd.google-apps.document'
+    };
+
+    try {
+      const file = await driveService.files.create({
+        resource: fileMetadata,
+        fields: 'id'
+      });
+
+      await sendMessage(chatId, `✅ Documento Google creato con successo: "${titoloDocumento}"\n📎 [Aprilo qui](https://docs.google.com/document/d/${file.data.id}/edit)`);
+    } catch (error) {
+      console.error("❌ Errore Google Drive:", error.message);
+      await sendMessage(chatId, "⚠️ Errore nella creazione del documento.");
+    }
+
+  } else {
+    // Caso generico: risposta da Gemini con data aggiornata
+    const userMessage = message.text;
+    const now = new Date().toLocaleString('it-IT', {
+      timeZone: 'Europe/Rome',
+      dateStyle: 'full',
+      timeStyle: 'short'
+    });
+
+    try {
+      const geminiResponse = await axios.post(
+        'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent',
+        {
+          contents: [{
+            parts: [
+              { text: `Oggi è ${now}. Rispondi in modo aggiornato e preciso.` },
+              { text: userMessage }
+            ]
+          }]
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': process.env.GEMINI_API_KEY
+          }
         }
-      }
-    );
+      );
 
-    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Nessuna risposta ricevuta da Gemini.';
-    await sendMessage(chatId, reply);
-  } catch (geminiErr) {
-    console.error('❌ Errore Gemini (testo):', geminiErr.response?.data || geminiErr.message);
-    await sendMessage(chatId, '⚠️ Errore durante la risposta dell’assistente AI.');
+      const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Nessuna risposta ricevuta da Gemini.';
+      await sendMessage(chatId, reply);
+    } catch (geminiErr) {
+      console.error('❌ Errore Gemini (testo):', geminiErr.response?.data || geminiErr.message);
+      await sendMessage(chatId, '⚠️ Errore durante la risposta dell’assistente AI.');
+    }
   }
 }
-
 
   res.sendStatus(200);
 });
