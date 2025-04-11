@@ -72,8 +72,36 @@ if (message.voice) {
               const transcription = response.results
                 .map(result => result.alternatives[0].transcript)
                 .join('\n');
+              
+            if (transcription) {
+  await sendMessage(chatId, `📝 Hai detto:\n${transcription}`);
 
-              await sendMessage(chatId, `📝 Hai detto:\n${transcription || 'Nessuna trascrizione trovata.'}`);
+  try {
+    const geminiResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+      {
+        contents: [{ parts: [{ text: transcription }] }]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        }
+      }
+    );
+
+    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Nessuna risposta ricevuta da Gemini.';
+    await sendMessage(chatId, `💬 Gemini:\n${reply}`);
+  } catch (geminiErr) {
+    console.error('❌ Errore Gemini:', geminiErr.response?.data || geminiErr.message);
+    await sendMessage(chatId, '⚠️ Errore durante la risposta dell’assistente AI.');
+  }
+} else {
+  await sendMessage(chatId, '⚠️ Nessuna trascrizione trovata da Google.');
+}
+
+
+              
             } catch (sttError) {
               console.error('❌ Errore Google STT:', sttError.message);
               await sendMessage(chatId, '⚠️ Errore nella trascrizione vocale.');
