@@ -78,7 +78,7 @@ if (message.voice) {
 
   try {
     const geminiResponse = await axios.post(
-      'https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent',
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent',
       {
         contents: [{ parts: [{ text: transcription }] }]
       },
