@@ -10,6 +10,37 @@ const ffmpeg = require('fluent-ffmpeg');            // Libreria wrapper per ffmp
 ffmpeg.setFfmpegPath(ffmpegPath);                   // Collega il binario statico a fluent-ffmpeg
 
 const { google } = require('googleapis');
+const gmail = google.gmail({ version: 'v1', auth });
+
+async function sendEmail({ to, subject, body }) {
+  const messageParts = [
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    'Content-Type: text/plain; charset=utf-8',
+    '',
+    body,
+  ];
+  const message = messageParts.join('\n');
+
+  const encodedMessage = Buffer.from(message)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '');
+
+  try {
+    await gmail.users.messages.send({
+      userId: 'me',
+      requestBody: {
+        raw: encodedMessage,
+      },
+    });
+    console.log('✅ Email inviata con successo');
+  } catch (err) {
+    console.error('❌ Errore invio email:', err.response?.data || err.message);
+  }
+}
+
 
 const auth = new google.auth.GoogleAuth({
   keyFile: process.env.GOOGLE_APPLICATION_CREDENTIALS,
