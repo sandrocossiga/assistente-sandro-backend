@@ -240,45 +240,109 @@ await driveService.permissions.create({
       console.error("❌ Errore Google Drive:", error.message);
       await sendMessage(chatId, "⚠️ Errore nella creazione del documento.");
     }
+// Caso: messaggio testuale
+if (message.text) {
+  const testo = message.text.toLowerCase();
+  const chatId = message.chat.id;
 
-  } else {
-    // Caso generico: risposta da Gemini con data aggiornata
-    const userMessage = message.text;
-    const now = new Date().toLocaleString('it-IT', {
-      timeZone: 'Europe/Rome',
-      dateStyle: 'full',
-      timeStyle: 'short'
-    });
+  // 1. Invia email
+  if (testo.startsWith("invia email a")) {
+    const emailRegex = /invia email a (.+?) con oggetto (.+?) e testo (.+)/i;
+    const match = testo.match(emailRegex);
+
+    if (match) {
+      const destinatario = match[1].trim();
+      const oggetto = match[2].trim();
+      const corpo = match[3].trim();
+
+      try {
+        const gmail = google.gmail({ version: 'v1', auth });
+
+        const encodedMessage = Buffer.from(
+          `To: ${destinatario}\r\n` +
+          `Subject: ${oggetto}\r\n\r\n` +
+          `${corpo}`
+        ).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
+
+        await gmail.users.messages.send({
+          userId: 'me',
+          requestBody: {
+            raw: encodedMessage
+          }
+        });
+
+        await sendMessage(chatId, `✅ Email inviata con successo a ${destinatario}`);
+      } catch (err) {
+        console.error("❌ Errore invio email:", err.message);
+        await sendMessage(chatId, "⚠️ Errore durante l'invio dell'email.");
+      }
+    } else {
+      await sendMessage(chatId, "⚠️ Formato email non valido. Usa:\ninvia email a [destinatario] con oggetto [oggetto] e testo [testo]");
+    }
+
+    return res.sendStatus(200); // Evita doppia risposta
+  }
+
+  // 2. Crea documento Google
+  if (testo.includes("crea documento google chiamato")) {
+    const match = message.text.match(/crea documento google chiamato (.+)/i);
+    const titoloDocumento = match ? match[1].trim() : "Documento senza nome";
+
+    const fileMetadata = {
+      name: titoloDocumento,
+      mimeType: 'application/vnd.google-apps.document'
+    };
 
     try {
-      const geminiResponse = await axios.post(
-        'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent',
-        {
-          contents: [{
-            parts: [
-              { text: `Oggi è ${now}. Rispondi in modo aggiornato e preciso.` },
-              { text: userMessage }
-            ]
-          }]
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'x-goog-api-key': process.env.GEMINI_API_KEY
-          }
-        }
-      );
+      const file = await driveService.files.create({
+        resource: fileMetadata,
+        fields: 'id'
+      });
 
-      const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Nessuna risposta ricevuta da Gemini.';
-      await sendMessage(chatId, reply);
-    } catch (geminiErr) {
-      console.error('❌ Errore Gemini (testo):', geminiErr.response?.data || geminiErr.message);
-      await sendMessage(chatId, '⚠️ Errore durante la risposta dell’assistente AI.');
+      await sendMessage(chatId, `✅ Documento Google creato con successo: "${titoloDocumento}"\n📎 [Aprilo qui](https://docs.google.com/document/d/${file.data.id}/edit)`);
+    } catch (error) {
+      console.error("❌ Errore Google Drive:", error.message);
+      await sendMessage(chatId, "⚠️ Errore nella creazione del documento.");
     }
-  }
-}
 
-  res.sendStatus(200);
+    return res.sendStatus(200);
+  }
+
+  // 3. Risposta generica da Gemini con data aggiornata
+  const userMessage = message.text;
+  const now = new Date().toLocaleString('it-IT', {
+    timeZone: 'Europe/Rome',
+    dateStyle: 'full',
+    timeStyle: 'short'
+  });
+
+  try {
+    const geminiResponse = await axios.post(
+      'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-pro:generateContent',
+      {
+        contents: [{
+          parts: [
+            { text: `Oggi è ${now}. Rispondi in modo aggiornato e preciso.` },
+            { text: userMessage }
+          ]
+        }]
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': process.env.GEMINI_API_KEY
+        }
+      }
+    );
+
+    const reply = geminiResponse.data.candidates?.[0]?.content?.parts?.[0]?.text || '🤖 Nessuna risposta ricevuta da Gemini.';
+    await sendMessage(chatId, reply);
+  } catch (geminiErr) {
+    console.error('❌ Errore Gemini (testo):', geminiErr.response?.data || geminiErr.message);
+    await sendMessage(chatId, '⚠️ Errore durante la risposta dell’assistente AI.');
+  }
+
+  return res.sendStatus(200);
 });
 
 async function sendMessage(chatId, text) {
