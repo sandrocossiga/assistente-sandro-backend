@@ -343,7 +343,7 @@ if (message.text) {
   }
 
   return res.sendStatus(200);
-});
+};
 
 async function sendMessage(chatId, text) {
   await axios.post(`${TELEGRAM_API}/sendMessage`, {
