@@ -8,7 +8,9 @@ const driveService = google.drive({ version: 'v3', auth }); const gmail = google
 
 const app = express(); app.use(bodyParser.json());
 
-const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN; const TELEGRAM_API = https://api.telegram.org/bot${TELEGRAM_TOKEN}; const TELEGRAM_FILE_API = https://api.telegram.org/file/bot${TELEGRAM_TOKEN};
+const TELEGRAM_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_TOKEN}`;
+const TELEGRAM_FILE_API = `https://api.telegram.org/file/bot${TELEGRAM_TOKEN}`;
 
 app.post('/webhook', async (req, res) => { const message = req.body.message; if (!message) return res.sendStatus(200);
 
